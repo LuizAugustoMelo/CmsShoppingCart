@@ -38,25 +38,53 @@ namespace CmsShoppingCart.Areas.Admin.Controllers
         public ActionResult AddPage(PageVM model)
         {
             //check model state
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+            using (Db db = new Db())
+            {
+                //declare slug
+                string slug;
 
-            //declare slug
+                //Init pageDTO
+                PageDTO dto = new PageDTO();
 
-            //Init pageDTO
+                //DTO Title
+                dto.Title = model.Title;
+                
+                //Check for and set slug if need be
+                if (string.IsNullOrWhiteSpace(model.Slug))
+                {
+                    slug = model.Title.Replace(" ", "-").ToLower();
+                }
+                else
+                {
+                    slug = model.Slug.Replace(" ", "-").ToLower();
+                }
+                
+                //Make sure title and slug ar unique
+                if (db.Pages.Any(x => x.Title == model.Title) || db.Pages.Any(x => x.Slug == model.Slug))
+                {
+                    ModelState.AddModelError("", "That title or slug already exists.");
+                    return View(model);
+                }
 
-            //DTO Title
+                //DTO Rest
+                dto.Slug = slug;
+                dto.Body = model.Body;
+                dto.HasSidebar = model.HasSidebar;
+                dto.Sorting = 100;
 
-            //Check for and set slug if need be
-
-            //Make sure title and slug ar unique
-
-            //DTO Rest
-
-            //Save DTO
-
+                //Save DTO
+                db.Pages.Add(dto);
+                db.SaveChanges();
+            }
             //Set TempData Message
+            TempData["SM"] = "You have added a new page!";
 
             //Redirect
-            return View();
+            return RedirectToAction("AddPage");
         }
     }
 }
