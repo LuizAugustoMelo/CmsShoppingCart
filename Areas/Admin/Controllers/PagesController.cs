@@ -33,7 +33,7 @@ namespace CmsShoppingCart.Areas.Admin.Controllers
             return View();
         }
 
-        // GET: Admin/Pages/AddPage
+        // Post: Admin/Pages/AddPage
         [HttpPost]
         public ActionResult AddPage(PageVM model)
         {
@@ -56,11 +56,11 @@ namespace CmsShoppingCart.Areas.Admin.Controllers
                 //Check for and set slug if need be
                 if (string.IsNullOrWhiteSpace(model.Slug))
                 {
-                    slug = model.Title.Replace(" ", "-").ToLower();
+                    slug = model.Title.Replace(" ", "-").ToLower().Trim();
                 }
                 else
                 {
-                    slug = model.Slug.Replace(" ", "-").ToLower();
+                    slug = model.Slug.Replace(" ", "-").ToLower().Trim();
                 }
                 
                 //Make sure title and slug ar unique
@@ -71,7 +71,7 @@ namespace CmsShoppingCart.Areas.Admin.Controllers
                 }
 
                 //DTO Rest
-                dto.Slug = slug;
+                dto.Slug = slug.Trim();
                 dto.Body = model.Body;
                 dto.HasSidebar = model.HasSidebar;
                 dto.Sorting = 100;
@@ -85,6 +85,201 @@ namespace CmsShoppingCart.Areas.Admin.Controllers
 
             //Redirect
             return RedirectToAction("AddPage");
+        }
+
+        // GET: Admin/Pages/EditPage/id
+        [HttpGet]
+        public ActionResult EditPage(int id)
+        {
+            //Declare pageVM
+            PageVM model;
+
+            using (Db db = new Db())
+            {
+                //Get Page
+                PageDTO dto = db.Pages.Find(id);
+
+                //Confirm page exist
+                if (dto == null)
+                {
+                    return Content("The page does not exist.");
+                }
+
+                //Init pageVM
+                model = new PageVM(dto);
+            }
+
+            //Return view with model
+            return View(model);
+        }
+
+        // Post: Admin/Pages/EditPage/id
+        [HttpPost]
+        public ActionResult EditPage(PageVM model)
+        {
+            //Check model state
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            using (Db db = new Db())
+            {
+                //Get Id
+                int id = model.Id;
+
+                //Declare Slug
+                string slug = "home";
+
+                // Get the page
+                PageDTO dto = db.Pages.Find(id);
+
+                //DTO the Title
+                dto.Title = model.Title;
+
+                //Check for slug and set it if need be
+                if (model.Slug != "home")
+                {
+                    if (string.IsNullOrWhiteSpace(model.Slug))
+                    {
+                        slug = model.Title.Replace(" ", "-").ToLower().Trim();
+                    }
+                    else
+                    {
+                        slug = model.Slug.Replace(" ", "-").ToLower().Trim();
+                    }
+                }
+
+                //Make sure title and slug are unique
+                if (db.Pages.Where(x => x.Id != id).Any(x => x.Title == model.Title) || 
+                    db.Pages.Where(x => x.Id != id).Any(x => x.Slug == slug))
+                {
+                    ModelState.AddModelError("", "That title or slug already exists.");
+                    return View(model);
+                }
+
+                //DTO the rest
+                dto.Slug = slug;
+                dto.Body = model.Body;
+                dto.HasSidebar = model.HasSidebar;
+
+                //Save The DTO
+                db.SaveChanges();
+            }
+            //Set TempData message
+            TempData["SM"] = "You have edited the page!";
+
+            // Redirect
+            return RedirectToAction("EditPage");
+        }
+
+        // Get: Admin/Pages/PageDetails/id
+        public ActionResult PageDetails(int id)
+        {
+            //Declare PageVM
+            PageVM model;
+
+            using (Db db = new Db())
+            {
+                //Get Page
+                PageDTO dto = db.Pages.Find(id);
+
+                //Confirm Page Esxists
+                if (dto == null)
+                {
+                    return Content("The page does not exist.");
+                }
+
+                //Init PageVM
+                model = new PageVM(dto);
+            }
+            //return View
+            return View(model);
+        }
+
+        // Get: Admin/Pages/DeletePage/id
+        public ActionResult DeletePage(int id)
+        {
+            using (Db db = new Db())
+            {
+                //Get the page
+                PageDTO dto = db.Pages.Find(id);
+
+                //Remove the page
+                db.Pages.Remove(dto);
+
+                //Save changes
+                db.SaveChanges();
+            }
+
+            //Redirect
+            return RedirectToAction("Index");
+        }
+
+        // Post: Admin/Pages/ReorderPages/id
+        [HttpPost]
+        public void ReorderPages(int[] id)
+        {
+            using(Db db = new Db())
+            {
+                //Set init count
+                int count = 1;
+
+                //Declare PageDTO
+                PageDTO dto;
+
+                //Set sorting for each page
+                foreach(var pageId in id)
+                {
+                    dto = db.Pages.Find(pageId);
+                    dto.Sorting = count;
+                    db.SaveChanges();
+
+                    count++;
+                }
+            }
+        }
+
+        // Get: Admin/Pages/EditSidebar/
+        [HttpGet]
+        public ActionResult EditSidebar()
+        {
+            //model
+            SidebarVM model;
+
+            using (Db db = new Db())
+            {
+                //get dto
+                SidebarDTO dto = db.Sidebar.Find(1);
+
+                //init model
+                model = new SidebarVM(dto);
+            }
+            //return model
+            return View(model);
+        }
+
+        // Post: Admin/Pages/EditSidebar/
+        [HttpPost]
+        public ActionResult EditSidebar(SidebarVM model)
+        {
+            using(Db db = new Db())
+            {
+                //get dto
+                SidebarDTO dto = db.Sidebar.Find(1);
+
+                //dto the body
+                dto.Body = model.Body;
+
+                //save
+                db.SaveChanges();
+            }
+
+            //Set TempData Message
+            TempData["SM"] = "You have edited the sidebar!";
+
+            //Redirect
+            return RedirectToAction("EditSidebar");
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
+using System.Web.Mvc;
 
 namespace CmsShoppingCart.Models.ViewModels.Pages
 {
@@ -20,6 +21,7 @@ namespace CmsShoppingCart.Models.ViewModels.Pages
 
         [Required]
         [StringLength(int.MaxValue, MinimumLength = 3)]
+        [AllowHtml]
         public string Body { get; set; }
 
         public int Sorting { get; set; }
@@ -34,9 +36,9 @@ namespace CmsShoppingCart.Models.ViewModels.Pages
         public PageVM(PageDTO row)
         {
             Id = row.Id;
-            Title = row.Title;
-            Slug = row.Slug;
-            Body = row.Body;
+            Title = row.Title.Trim();
+            Slug = row.Slug.Trim().ToLower();
+            Body = row.Body.Trim();
             Sorting = row.Sorting;
             HasSidebar = row.HasSidebar;
         }
